@@ -1,0 +1,233 @@
+<!doctype html>
+<html lang="es">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Malla interactiva – Ingeniería en Ciencia de Datos (UNITEC)</title>
+  <style>
+    :root {
+      --bg: #0b1020;
+      --card: #121935;
+      --muted: #94a3b8;
+      --text: #e2e8f0;
+      --accent: #60a5fa;
+      --ok: #22c55e;
+      --warn: #f59e0b;
+    }
+    * { box-sizing: border-box; }
+    html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
+    header { padding: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; border-bottom: 1px solid #1f2a44; }
+    header h1 { margin: 0; font-size: 18px; }
+    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    button, select { background: #0f172a; color: var(--text); border: 1px solid #1f2a44; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
+    button:hover { border-color: var(--accent); }
+
+    .grid { display: grid; grid-template-columns: repeat(4, minmax(260px, 1fr)); gap: 14px; padding: 18px; }
+    @media (max-width: 1200px) { .grid { grid-template-columns: repeat(3, minmax(260px, 1fr)); } }
+    @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); } }
+    @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
+
+    .col { background: transparent; border: 1px dashed #1f2a44; border-radius: 14px; padding: 10px; }
+    .col h2 { margin: 4px 6px 10px; font-size: 15px; color: var(--muted); font-weight: 600; }
+
+    .course { background: var(--card); border: 1px solid #1f2a44; border-radius: 12px; padding: 10px; margin: 8px; position: relative; transition: transform .12s ease, border-color .12s ease; }
+    .course:hover { transform: translateY(-1px); border-color: #28406c; }
+    .course.approved { outline: 2px solid var(--ok); }
+
+    .course .name { font-weight: 600; margin-bottom: 6px; }
+    .course .meta { font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
+
+    .badge { display: inline-block; font-size: 11px; background: #0b1329; border: 1px solid #1e293b; color: var(--muted); padding: 2px 6px; border-radius: 999px; }
+
+    .foot { padding: 12px 18px 22px; color: var(--muted); font-size: 12px; }
+    a { color: var(--accent); }
+    .hint { font-size: 12px; color: var(--muted); }
+  </style>
+</head>
+<body>
+  <header>
+    <h1>Ingeniería en Ciencia de Datos – Malla interactiva</h1>
+    <div class="controls">
+      <select id="filter">
+        <option value="all">Mostrar todo</option>
+        <option value="pending">Solo pendientes</option>
+        <option value="approved">Solo aprobadas</option>
+      </select>
+      <button id="clear">Borrar progreso</button>
+      <span class="hint">Haz clic en una materia para marcarla como aprobada.</span>
+    </div>
+  </header>
+
+  <main class="grid" id="grid"></main>
+
+  <div class="foot">
+    <p>
+      Estado guardado en <strong>este navegador</strong> (localStorage). Puedes publicar este archivo como <em>GitHub Pages</em> sin backend.
+    </p>
+  </div>
+
+  <script>
+    // === Datos de ejemplo por cuatrimestre ===
+    // Puedes editar/añadir "creditos" y "prerrequisitos" cuando los tengas.
+    const PLAN = {
+      1: [
+        { nombre: "Fundamentos de ciencia de datos" },
+        { nombre: "Geometría analítica vectorial en 2D" },
+        { nombre: "Álgebra para ciencias" },
+        { nombre: "Comunicación oral y escrita" },
+        { nombre: "Inglés I" }
+      ],
+      2: [
+        { nombre: "Matemáticas discretas" },
+        { nombre: "Cálculo diferencial para ciencias" },
+        { nombre: "Espacios y transformaciones lineales" },
+        { nombre: "Geometría analítica vectorial en 3D" },
+        { nombre: "Inglés II" }
+      ],
+      3: [
+        { nombre: "Fundamentos de programación" },
+        { nombre: "Cálculo integral para ciencias" },
+        { nombre: "Pensamiento para el diseño e innovación" },
+        { nombre: "Ciencia y técnica con humanismo" },
+        { nombre: "Inglés III" }
+      ],
+      4: [
+        { nombre: "Estructura de datos" },
+        { nombre: "Cálculo en varias variables" },
+        { nombre: "Modelos probabilísticos" },
+        { nombre: "Responsabilidad social y sustentabilidad" },
+        { nombre: "Inglés IV" }
+      ],
+      5: [
+        { nombre: "Programación avanzada" },
+        { nombre: "Ecuaciones diferenciales" },
+        { nombre: "Modelos estadísticos" },
+        { nombre: "Comunicación y visualización de datos" },
+        { nombre: "Inglés V" }
+      ],
+      6: [
+        { nombre: "Modelos de bases de datos" },
+        { nombre: "Métodos numéricos" },
+        { nombre: "Modelos estadísticos avanzados" },
+        { nombre: "Modelado computacional" },
+        { nombre: "Inglés VI" }
+      ],
+      7: [
+        { nombre: "Gestión de bases de datos" },
+        { nombre: "Procesos estocásticos" },
+        { nombre: "Modelado y analítica de datos" },
+        { nombre: "Sistemas no lineales" },
+        { nombre: "Estrategia y modelos de negocio" }
+      ],
+      8: [
+        { nombre: "Programación para ciencia de datos" },
+        { nombre: "Ingeniería de requerimientos" },
+        { nombre: "Modelado y analítica de datos avanzada" },
+        { nombre: "Sistemas complejos" },
+        { nombre: "Investigación de operaciones y optimización" }
+      ],
+      9: [
+        { nombre: "Programación para ciencia de datos avanzada" },
+        { nombre: "Inteligencia artificial" },
+        { nombre: "Bases de datos no relacionales" },
+        { nombre: "Cómputo en la nube" }
+      ],
+      10: [
+        { nombre: "Internet de las cosas" },
+        { nombre: "Aprendizaje automático" },
+        { nombre: "Manejo de grandes volúmenes de datos" },
+        { nombre: "Ingeniería de aplicaciones para ciencia de datos" }
+      ],
+      11: [
+        { nombre: "Ciencia de datos en el sector público" },
+        { nombre: "Procesamiento de lenguaje natural" },
+        { nombre: "Redes neuronales" },
+        { nombre: "Gestión de proyectos de tecnología" }
+      ],
+      12: [
+        { nombre: "Seguridad de tecnología de información" },
+        { nombre: "Ciencia de datos en el sector privado" },
+        { nombre: "Aprendizaje profundo" },
+        { nombre: "Cómputo paralelo" }
+      ]
+    };
+
+    // === Persistencia local ===
+    const KEY = "malla_unitec_progress_v1";
+    const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
+
+    function isApproved(name){ return Boolean(saved[name]); }
+    function toggleApproved(name){
+      saved[name] = !saved[name];
+      localStorage.setItem(KEY, JSON.stringify(saved));
+      render();
+    }
+
+    // === Render ===
+    const grid = document.getElementById('grid');
+    const filter = document.getElementById('filter');
+
+    function courseCard(course){
+      const div = document.createElement('div');
+      div.className = 'course' + (isApproved(course.nombre) ? ' approved' : '');
+      div.tabIndex = 0;
+      div.title = 'Clic para marcar como aprobada';
+      div.addEventListener('click', () => toggleApproved(course.nombre));
+      div.addEventListener('keypress', (e) => { if(e.key === 'Enter' || e.key === ' ') toggleApproved(course.nombre); });
+
+      const name = document.createElement('div');
+      name.className = 'name';
+      name.textContent = course.nombre;
+
+      const meta = document.createElement('div');
+      meta.className = 'meta';
+      if(course.creditos) meta.innerHTML += `<span class="badge">${course.creditos} créditos</span>`;
+      if(course.prerrequisitos?.length) meta.innerHTML += `<span class="badge">Req: ${course.prerrequisitos.join(', ')}</span>`;
+
+      div.appendChild(name);
+      if(meta.textContent) div.appendChild(meta);
+      return div;
+    }
+
+    function render(){
+      grid.innerHTML = '';
+      const mode = filter.value;
+
+      for(const cuatri of Object.keys(PLAN).map(Number).sort((a,b)=>a-b)){
+        const col = document.createElement('section');
+        col.className = 'col';
+        const h2 = document.createElement('h2');
+        h2.textContent = `${cuatri}º Cuatrimestre`;
+        col.appendChild(h2);
+
+        const cursos = PLAN[cuatri].filter(c => {
+          if(mode === 'approved') return isApproved(c.nombre);
+          if(mode === 'pending') return !isApproved(c.nombre);
+          return true;
+        });
+
+        if(cursos.length === 0){
+          const empty = document.createElement('div');
+          empty.className = 'course';
+          empty.innerHTML = '<span class="meta">(sin materias para este filtro)</span>';
+          col.appendChild(empty);
+        } else {
+          for(const c of cursos){ col.appendChild(courseCard(c)); }
+        }
+
+        grid.appendChild(col);
+      }
+    }
+
+    document.getElementById('clear').addEventListener('click', () => {
+      if(confirm('¿Borrar el progreso guardado en este navegador?')){
+        localStorage.removeItem(KEY);
+        location.reload();
+      }
+    });
+
+    filter.addEventListener('change', render);
+    render();
+  </script>
+</body>
+</html>
