@@ -6,38 +6,38 @@
   <title>Malla interactiva – Ingeniería en Ciencia de Datos (UNITEC)</title>
   <style>
     :root {
-      --bg: #0b1020;
-      --card: #121935;
-      --muted: #94a3b8;
-      --text: #e2e8f0;
-      --accent: #60a5fa;
-      --ok: #22c55e;
+      --bg: #ffe9f4;
+      --card: #fff;
+      --muted: #555;
+      --text: #333;
+      --accent: #d598a3;
+      --ok: #d598a3;
       --warn: #f59e0b;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-    header { padding: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; border-bottom: 1px solid #1f2a44; }
+    header { padding: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5c2ce; }
     header h1 { margin: 0; font-size: 18px; }
     .controls { display: flex; gap: 8px; flex-wrap: wrap; }
-    button, select { background: #0f172a; color: var(--text); border: 1px solid #1f2a44; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
-    button:hover { border-color: var(--accent); }
+    button, select { background: #f7d8e6; color: var(--text); border: 1px solid #d598a3; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
+    button:hover { border-color: var(--accent); background: #f0cbd9; }
 
     .grid { display: grid; grid-template-columns: repeat(4, minmax(260px, 1fr)); gap: 14px; padding: 18px; }
     @media (max-width: 1200px) { .grid { grid-template-columns: repeat(3, minmax(260px, 1fr)); } }
     @media (max-width: 900px) { .grid { grid-template-columns: repeat(2, minmax(260px, 1fr)); } }
     @media (max-width: 620px) { .grid { grid-template-columns: 1fr; } }
 
-    .col { background: transparent; border: 1px dashed #1f2a44; border-radius: 14px; padding: 10px; }
+    .col { background: transparent; border: 1px dashed #d598a3; border-radius: 14px; padding: 10px; }
     .col h2 { margin: 4px 6px 10px; font-size: 15px; color: var(--muted); font-weight: 600; }
 
-    .course { background: var(--card); border: 1px solid #1f2a44; border-radius: 12px; padding: 10px; margin: 8px; position: relative; transition: transform .12s ease, border-color .12s ease; }
-    .course:hover { transform: translateY(-1px); border-color: #28406c; }
-    .course.approved { outline: 2px solid var(--ok); }
+    .course { background: var(--card); border: 1px solid #d598a3; border-radius: 12px; padding: 10px; margin: 8px; position: relative; transition: transform .12s ease, border-color .12s ease, background-color .12s ease; }
+    .course:hover { transform: translateY(-1px); border-color: var(--accent); }
+    .course.approved { background: #d598a3; color: white; }
 
     .course .name { font-weight: 600; margin-bottom: 6px; }
     .course .meta { font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
 
-    .badge { display: inline-block; font-size: 11px; background: #0b1329; border: 1px solid #1e293b; color: var(--muted); padding: 2px 6px; border-radius: 999px; }
+    .badge { display: inline-block; font-size: 11px; background: #f0cbd9; border: 1px solid #d598a3; color: #333; padding: 2px 6px; border-radius: 999px; }
 
     .foot { padding: 12px 18px 22px; color: var(--muted); font-size: 12px; }
     a { color: var(--accent); }
@@ -67,8 +67,6 @@
   </div>
 
   <script>
-    // === Datos de ejemplo por cuatrimestre ===
-    // Puedes editar/añadir "creditos" y "prerrequisitos" cuando los tengas.
     const PLAN = {
       1: [
         { nombre: "Fundamentos de ciencia de datos" },
@@ -152,7 +150,6 @@
       ]
     };
 
-    // === Persistencia local ===
     const KEY = "malla_unitec_progress_v1";
     const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
 
@@ -163,7 +160,6 @@
       render();
     }
 
-    // === Render ===
     const grid = document.getElementById('grid');
     const filter = document.getElementById('filter');
 
