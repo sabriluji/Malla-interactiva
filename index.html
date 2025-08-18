@@ -13,14 +13,26 @@
       --accent: #d598a3;
       --ok: #d598a3;
       --warn: #f59e0b;
+
+      /* Colores para la barra de progreso */
+      --c1: #D6B1BB;
+      --c2: #CFDBE7;
+      --c3: #9EBDB8;
+      --c4: #E0DABA;
+      --c5: #C6C5DD;
+      --c6: #FEE3DF;
+      --c7: #9CABC8;
     }
     * { box-sizing: border-box; }
     html, body { margin: 0; height: 100%; background: var(--bg); color: var(--text); font: 14px/1.5 system-ui, -apple-system, Segoe UI, Roboto, Ubuntu, Cantarell, Noto Sans, Helvetica, Arial, "Apple Color Emoji", "Segoe UI Emoji"; }
-    header { padding: 20px; display: flex; flex-wrap: wrap; gap: 12px; align-items: center; justify-content: space-between; border-bottom: 1px solid #e5c2ce; }
-    header h1 { margin: 0; font-size: 18px; }
-    .controls { display: flex; gap: 8px; flex-wrap: wrap; }
+    header { padding: 20px; display: flex; flex-direction: column; align-items: center; border-bottom: 1px solid #e5c2ce; }
+    header h1 { margin: 0; font-size: 28px; text-align: center; }
+    .controls { margin-top: 12px; display: flex; gap: 8px; flex-wrap: wrap; justify-content: center; }
     button, select { background: #f7d8e6; color: var(--text); border: 1px solid #d598a3; padding: 8px 10px; border-radius: 10px; cursor: pointer; }
     button:hover { border-color: var(--accent); background: #f0cbd9; }
+
+    .progress-container { margin-top: 15px; width: 90%; max-width: 600px; height: 20px; background: #f0cbd9; border-radius: 10px; overflow: hidden; }
+    .progress-bar { height: 100%; width: 0%; transition: width 0.3s ease; background: linear-gradient(90deg, var(--c1), var(--c2), var(--c3), var(--c4), var(--c5), var(--c6), var(--c7)); }
 
     .grid { display: grid; grid-template-columns: repeat(4, minmax(260px, 1fr)); gap: 14px; padding: 18px; }
     @media (max-width: 1200px) { .grid { grid-template-columns: repeat(3, minmax(260px, 1fr)); } }
@@ -42,11 +54,32 @@
     .foot { padding: 12px 18px 22px; color: var(--muted); font-size: 12px; }
     a { color: var(--accent); }
     .hint { font-size: 12px; color: var(--muted); }
+    .title{ width:100%; text-align:center; font-size:32px; line-height:1.2; margin:0; }
+    
+    /* Barra de progreso con paleta dada */
+    .progress-wrap{ width:100%; max-width:900px; margin:8px auto 0; display:flex; flex-direction:column; gap:6px; align-items:center; }
+    .progress-bar{ position:relative; height:14px; width:100%; border-radius:999px; overflow:hidden; border:1px solid #d598a3; background:#FEE3DF55; }
+    .progress-bar::before{ content:""; position:absolute; inset:0; width:var(--w,0%); transition:width .2s ease; 
+      background: repeating-linear-gradient(90deg,
+        #D6B1BB 0 14px,
+        #CFDBE7 14px 28px,
+        #9EBDB8 28px 42px,
+        #E0DABA 42px 56px,
+        #C6C5DD 56px 70px,
+        #FEE3DF 70px 84px,
+        #9CABC8 84px 98px
+      );
+    }
+    .progress-label{ font-size:12px; color: var(--muted); }
   </style>
 </head>
 <body>
   <header>
-    <h1>Ingeniería en Ciencia de Datos – Malla interactiva</h1>
+    <h1 class="title">Ingeniería en Ciencia de Datos – Malla interactiva</h1>
+    <div class="progress-wrap" aria-label="Progreso del plan de estudios">
+      <div class="progress-bar" id="progressBar"></div>
+      <div class="progress-label" id="progressLabel">0% (0/0)</div>
+    </div>
     <div class="controls">
       <select id="filter">
         <option value="all">Mostrar todo</option>
@@ -105,7 +138,7 @@
       ],
       6: [
         { nombre: "Modelos de bases de datos" },
-        { nombre: "Métodos numéricos" },
+        { nombre: "MéTodos numéricos" },
         { nombre: "Modelos estadísticos avanzados" },
         { nombre: "Modelado computacional" },
         { nombre: "Inglés VI" }
@@ -162,6 +195,7 @@
 
     const grid = document.getElementById('grid');
     const filter = document.getElementById('filter');
+    const progress = document.getElementById('progress');
 
     function courseCard(course){
       const div = document.createElement('div');
@@ -189,6 +223,8 @@
       grid.innerHTML = '';
       const mode = filter.value;
 
+      let total = 0; let done = 0;
+
       for(const cuatri of Object.keys(PLAN).map(Number).sort((a,b)=>a-b)){
         const col = document.createElement('section');
         col.className = 'col';
@@ -196,7 +232,11 @@
         h2.textContent = `${cuatri}º Cuatrimestre`;
         col.appendChild(h2);
 
-        const cursos = PLAN[cuatri].filter(c => {
+        const cursosAll = PLAN[cuatri];
+        total += cursosAll.length;
+        done += cursosAll.filter(c=>isApproved(c.nombre)).length;
+
+        const cursos = cursosAll.filter(c => {
           if(mode === 'approved') return isApproved(c.nombre);
           if(mode === 'pending') return !isApproved(c.nombre);
           return true;
@@ -213,6 +253,40 @@
 
         grid.appendChild(col);
       }
+
+      // Actualiza la barra de progreso
+      const pct = total ? Math.round((done/total)*100) : 0;
+      const bar = document.getElementById('progressBar');
+      const label = document.getElementById('progressLabel');
+      bar.style.setProperty('--w', pct + '%');
+      label.textContent = `${pct}% (${done}/${total})`;
+    }º Cuatrimestre`;
+        col.appendChild(h2);
+
+        const cursos = PLAN[cuatri].filter(c => {
+          if(mode === 'approved') return isApproved(c.nombre);
+          if(mode === 'pending') return !isApproved(c.nombre);
+          return true;
+        });
+
+        if(cursos.length === 0){
+          const empty = document.createElement('div');
+          empty.className = 'course';
+          empty.innerHTML = '<span class="meta">(sin materias para este filtro)</span>';
+          col.appendChild(empty);
+        } else {
+          for(const c of cursos){
+            total++;
+            if(isApproved(c.nombre)) aprobadas++;
+            col.appendChild(courseCard(c));
+          }
+        }
+
+        grid.appendChild(col);
+      }
+
+      const porcentaje = total > 0 ? (aprobadas / total) * 100 : 0;
+      progress.style.width = porcentaje + '%';
     }
 
     document.getElementById('clear').addEventListener('click', () => {
