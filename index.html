@@ -73,6 +73,11 @@
       color: #333;
       border-color: #ffffff;
     }
+    /* Estado en curso (no debe sobreescribir aprobado) */
+    .course.in-progress:not(.approved) {
+      background: #AFB3CB;
+      border-color: #AFB3CB;
+    }
   </style>
 </head>
 <body>
@@ -80,7 +85,7 @@
     <h1 class="title">Ingeniería en Ciencia de Datos (UNITEC)</h1>
     <div class="progress-wrap" aria-label="Progreso del plan de estudios">
       <div class="progress-bar" id="progressBar"></div>
-      <div class="progress-label" id="progressLabel">0% (0/0)</div>
+      <div class="progress-label" id="progressLabel">Aprobadas: 0% (0%)</div>
     </div>
     <div class="controls">
       <select id="filter" aria-label="Filtro de materias">
@@ -187,18 +192,19 @@
     // === Persistencia local ===
     const KEY = "malla_unitec_progress_v1";
     const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
-    // Estructura nueva: saved[curso] = { approved: boolean, grade: number|null }
+    // Estructura: saved[curso] = { approved: boolean, grade: number|null, inProgress: boolean }
     function migrateSaved(){
       let changed = false;
       const allNames = Object.values(PLAN).flat().map(c => c.nombre);
       for(const name of allNames){
         const v = saved[name];
         if(typeof v === 'boolean'){
-          saved[name] = v ? { approved: true, grade: 6 } : { approved: false, grade: null };
+          saved[name] = v ? { approved: true, grade: 6, inProgress: false } : { approved: false, grade: null, inProgress: false };
           changed = true;
         } else if(v && typeof v === 'object'){
           if(typeof v.approved !== 'boolean'){ v.approved = Boolean(v.grade && v.grade >= 6 && v.grade <= 10); changed = true; }
           if(!('grade' in v)) { v.grade = null; changed = true; }
+          if(!('inProgress' in v)) { v.inProgress = false; changed = true; }
         }
       }
       if(changed){ localStorage.setItem(KEY, JSON.stringify(saved)); }
@@ -214,6 +220,7 @@
       return (v && typeof v === 'object') ? (v.grade ?? null) : null;
     }
     function setGradeAndStatus(name, gradeValue){
+      const prev = (saved[name] && typeof saved[name] === 'object') ? saved[name] : { inProgress: false };
       const isEmpty = gradeValue === '' || gradeValue === null || Number.isNaN(Number(gradeValue));
       let grade = null;
       let approved = false;
@@ -221,21 +228,38 @@
         const n = parseFloat(String(gradeValue).replace(',', '.'));
         if(!Number.isNaN(n)){ grade = n; approved = n >= 6 && n <= 10; }
       }
-      saved[name] = { approved, grade };
+      saved[name] = { ...prev, approved, grade };
       localStorage.setItem(KEY, JSON.stringify(saved));
     }
+    function isInProgress(name){
+      const v = saved[name];
+      return (v && typeof v === 'object') ? Boolean(v.inProgress) : false;
+    }
+    function toggleInProgress(name){
+      const prev = (saved[name] && typeof saved[name] === 'object') ? saved[name] : { approved: false, grade: null, inProgress: false };
+      const next = !prev.inProgress;
+      saved[name] = { ...prev, inProgress: next };
+      localStorage.setItem(KEY, JSON.stringify(saved));
+      return next;
+    }
     function updateProgress(){
-      let total = 0; let done = 0;
+      let total = 0; let done = 0; let inProgNotApproved = 0;
       for(const cuatri of Object.keys(PLAN)){
         const cursosAll = PLAN[cuatri];
         total += cursosAll.length;
-        done += cursosAll.filter(c=>isApproved(c.nombre)).length;
+        for(const c of cursosAll){
+          const approved = isApproved(c.nombre);
+          const inProg = isInProgress(c.nombre);
+          if(approved) done++;
+          else if(inProg) inProgNotApproved++;
+        }
       }
       const pct = total ? Math.round((done/total)*100) : 0;
+      const pctEst = total ? Math.round(((done + inProgNotApproved)/total)*100) : 0;
       const bar = document.getElementById('progressBar');
       const label = document.getElementById('progressLabel');
       bar.style.setProperty('--w', pct + '%');
-      label.textContent = `${pct}% (${done}/${total})`;
+      label.textContent = `Aprobadas: ${pct}% (${pctEst}%)`;
     }
 
     // === Render ===
@@ -244,10 +268,17 @@
 
     function courseCard(course){
       const div = document.createElement('div');
-      div.className = 'course' + (isApproved(course.nombre) ? ' approved' : '');
+      div.className = 'course' + (isApproved(course.nombre) ? ' approved' : '') + (isInProgress(course.nombre) ? ' in-progress' : '');
       div.tabIndex = 0;
       div.role = 'group';
-      div.title = 'Ingresa la nota para marcar como aprobada';
+      div.title = 'Ingresa la nota para marcar como aprobada. Clic en la tarjeta para “en curso”.'
+      ;
+      div.addEventListener('click', (e) => {
+        if(e.target && e.target.closest && e.target.closest('.grade-input')) return;
+        const on = toggleInProgress(course.nombre);
+        div.classList.toggle('in-progress', on);
+        updateProgress();
+      });
 
       const name = document.createElement('div');
       name.className = 'name';
@@ -327,12 +358,8 @@
         grid.appendChild(col);
       }
 
-      // Actualiza la barra de progreso
-      const pct = total ? Math.round((done/total)*100) : 0;
-      const bar = document.getElementById('progressBar');
-      const label = document.getElementById('progressLabel');
-      bar.style.setProperty('--w', pct + '%');
-      label.textContent = `${pct}% (${done}/${total})`;
+      // Actualiza la barra y etiqueta de progreso (con estimado)
+      updateProgress();
     }
 
     document.getElementById('clear').addEventListener('click', () => {
