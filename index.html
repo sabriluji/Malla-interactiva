@@ -244,6 +244,7 @@
     }
     function updateProgress(){
       let total = 0; let done = 0; let inProgNotApproved = 0;
+      let gradesCount = 0; let gradesSum = 0;
       for(const cuatri of Object.keys(PLAN)){
         const cursosAll = PLAN[cuatri];
         total += cursosAll.length;
@@ -252,14 +253,20 @@
           const inProg = isInProgress(c.nombre);
           if(approved) done++;
           else if(inProg) inProgNotApproved++;
+          const g = getGrade(c.nombre);
+          if(typeof g === 'number' && !Number.isNaN(g)){
+            gradesCount++;
+            gradesSum += g;
+          }
         }
       }
       const pct = total ? Math.round((done/total)*100) : 0;
       const pctEst = total ? Math.round(((done + inProgNotApproved)/total)*100) : 0;
+      const avg = gradesCount ? (gradesSum / gradesCount) : null;
       const bar = document.getElementById('progressBar');
       const label = document.getElementById('progressLabel');
       bar.style.setProperty('--w', pct + '%');
-      label.textContent = `Aprobadas: ${pct}% (${pctEst}%)`;
+      label.textContent = `Aprobadas: ${pct}% (${pctEst}%${avg !== null ? ` · Prom: ${avg.toFixed(1)}` : ''})`;
     }
 
     // === Render ===
