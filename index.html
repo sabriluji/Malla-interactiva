@@ -108,8 +108,8 @@
     // === Plan por cuatrimestre ===
     const PLAN = {
       1: [
-        { nombre: "fundamentos de ciencia de datos" },
-        { nombre: "geometría analítica vectorial en 2D" },
+        { nombre: "Fundamentos de ciencia de datos" },
+        { nombre: "Geometría analítica vectorial en 2D" },
         { nombre: "Álgebra para ciencias" },
         { nombre: "Comunicación oral y escrita" },
         { nombre: "Inglés I" }
@@ -192,7 +192,7 @@
     // === Persistencia local ===
     const KEY = "malla_unitec_progress_v1";
     const saved = JSON.parse(localStorage.getItem(KEY) || "{}");
-    // Estructura: saved[curso] = { approved: boolean, grade: number|null, inProgress: boolean }
+    // Estructura: saved[curso] = { approved: boolean, grade: number|null|'A', inProgress: boolean }
     function migrateSaved(){
       let changed = false;
       const allNames = Object.values(PLAN).flat().map(c => c.nombre);
@@ -202,7 +202,14 @@
           saved[name] = v ? { approved: true, grade: 6, inProgress: false } : { approved: false, grade: null, inProgress: false };
           changed = true;
         } else if(v && typeof v === 'object'){
-          if(typeof v.approved !== 'boolean'){ v.approved = Boolean(v.grade && v.grade >= 6 && v.grade <= 10); changed = true; }
+          if(typeof v.approved !== 'boolean'){
+            const g = v.grade;
+            let approved = false;
+            if(typeof g === 'number'){ approved = g >= 6 && g <= 10; }
+            else if(g === 'A'){ approved = true; }
+            v.approved = approved;
+            changed = true;
+          }
           if(!('grade' in v)) { v.grade = null; changed = true; }
           if(!('inProgress' in v)) { v.inProgress = false; changed = true; }
         }
@@ -221,12 +228,18 @@
     }
     function setGradeAndStatus(name, gradeValue){
       const prev = (saved[name] && typeof saved[name] === 'object') ? saved[name] : { inProgress: false };
-      const isEmpty = gradeValue === '' || gradeValue === null || Number.isNaN(Number(gradeValue));
+      const raw = (gradeValue ?? '').toString().trim();
+      const isEmpty = raw === '';
       let grade = null;
       let approved = false;
       if(!isEmpty){
-        const n = parseFloat(String(gradeValue).replace(',', '.'));
-        if(!Number.isNaN(n)){ grade = n; approved = n >= 6 && n <= 10; }
+        if(raw.toUpperCase() === 'A'){
+          grade = 'A';
+          approved = true;
+        } else {
+          const n = parseFloat(raw.replace(',', '.'));
+          if(!Number.isNaN(n)){ grade = n; approved = n >= 6 && n <= 10; }
+        }
       }
       saved[name] = { ...prev, approved, grade };
       localStorage.setItem(KEY, JSON.stringify(saved));
@@ -300,12 +313,12 @@
       const gradeRow = document.createElement('div');
       gradeRow.className = 'grade-row';
       const input = document.createElement('input');
-      input.type = 'number';
-      input.inputMode = 'decimal';
+      input.type = 'text';
+      input.inputMode = 'text';
       input.min = '0';
       input.max = '10';
       input.step = '0.1';
-      input.placeholder = 'Nota (6–10)';
+      input.placeholder = 'Nota (6–10 o A)';
       input.className = 'grade-input';
       const currentGrade = getGrade(course.nombre);
       if(currentGrade !== null && currentGrade !== undefined){ input.value = String(currentGrade); }
