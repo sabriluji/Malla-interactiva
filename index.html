@@ -50,7 +50,7 @@
       background: #ffe4e4;
       border-color: #df5a5a;
       color: #8a1f1f;
-      cursor: not-allowed;
+      cursor: pointer;
     }
     .course.locked:hover { transform: none; border-color: #df5a5a; }
 
@@ -85,7 +85,7 @@
       background: #fff4f4;
       border-color: #e8a5a5;
       color: #8a1f1f;
-      cursor: not-allowed;
+      cursor: text;
     }
     /* Estado en curso (no debe sobreescribir aprobado) */
     .course.in-progress:not(.approved) {
@@ -276,11 +276,6 @@
       return (v && typeof v === 'object') ? (v.grade ?? null) : null;
     }
     function setGradeAndStatus(name, gradeValue){
-      const course = { nombre: name, prerrequisitos: PRERREQUISITOS[name] || [] };
-      const missing = getMissingPrerequisitos(course);
-      if(missing.length){
-        return false;
-      }
       const prev = (saved[name] && typeof saved[name] === 'object') ? saved[name] : { inProgress: false };
       const raw = (gradeValue ?? '').toString().trim();
       const isEmpty = raw === '';
@@ -304,11 +299,6 @@
       return (v && typeof v === 'object') ? Boolean(v.inProgress) : false;
     }
     function toggleInProgress(name){
-      const course = { nombre: name, prerrequisitos: PRERREQUISITOS[name] || [] };
-      const missing = getMissingPrerequisitos(course);
-      if(missing.length){
-        return false;
-      }
       const prev = (saved[name] && typeof saved[name] === 'object') ? saved[name] : { approved: false, grade: null, inProgress: false };
       const next = !prev.inProgress;
       saved[name] = { ...prev, inProgress: next };
@@ -357,12 +347,11 @@
       div.tabIndex = 0;
       div.role = 'group';
       div.title = isLocked
-        ? `Materia seriada. Debes aprobar antes: ${missingPrereqs.join(', ')}.`
+        ? `Materia seriada (aviso). Requisito(s): ${missingPrereqs.join(', ')}.`
         : 'Ingresa la nota para marcar como aprobada. Clic en la tarjeta para “en curso”.'
       ;
       div.addEventListener('click', (e) => {
         if(e.target && e.target.closest && e.target.closest('.grade-input')) return;
-        if(isLocked) return;
         const on = toggleInProgress(course.nombre);
         div.classList.toggle('in-progress', on);
         updateProgress();
@@ -377,7 +366,7 @@
       if(course.creditos) meta.innerHTML += `<span class="badge">${course.creditos} créditos</span>`;
       const prereqs = getPrerequisitos(course);
       if(prereqs.length) meta.innerHTML += `<span class="badge">Req: ${prereqs.join(', ')}</span>`;
-      if(isLocked) meta.innerHTML += `<span class="badge">Bloqueada</span>`;
+      if(isLocked) meta.innerHTML += `<span class="badge">Seriada</span>`;
 
       // Campo de nota
       const gradeRow = document.createElement('div');
@@ -392,10 +381,8 @@
       input.className = 'grade-input';
       const currentGrade = getGrade(course.nombre);
       if(currentGrade !== null && currentGrade !== undefined){ input.value = String(currentGrade); }
-      input.disabled = isLocked;
 
       input.addEventListener('input', () => {
-        if(isLocked) return;
         const before = isApproved(course.nombre);
         const val = input.value.trim();
         const updated = setGradeAndStatus(course.nombre, val);
