@@ -46,10 +46,18 @@
     .course { background: var(--card); border: 1px solid #d598a3; border-radius: 12px; padding: 10px; margin: 8px; position: relative; transition: transform .12s ease, border-color .12s ease, background-color .12s ease, color .12s ease; }
     .course:hover { transform: translateY(-1px); border-color: var(--accent); }
     .course.approved { background: #d598a3; color: #ffffff; }
+    .course.locked {
+      background: #ffe4e4;
+      border-color: #df5a5a;
+      color: #8a1f1f;
+      cursor: not-allowed;
+    }
+    .course.locked:hover { transform: none; border-color: #df5a5a; }
 
     .course .name { font-weight: 700; margin-bottom: 6px; }
     .course .meta { font-size: 12px; color: var(--muted); display: flex; gap: 8px; flex-wrap: wrap; }
     .course.approved .meta { color: #fff; opacity: .9; }
+    .course.locked .meta { color: #8a1f1f; }
 
     .badge { display: inline-block; font-size: 11px; background: #f0cbd9; border: 1px solid #d598a3; color: #333; padding: 2px 6px; border-radius: 999px; }
 
@@ -72,6 +80,12 @@
       background: #ffffff;
       color: #333;
       border-color: #ffffff;
+    }
+    .course.locked .grade-input {
+      background: #fff4f4;
+      border-color: #e8a5a5;
+      color: #8a1f1f;
+      cursor: not-allowed;
     }
     /* Estado en curso (no debe sobreescribir aprobado) */
     .course.in-progress:not(.approved) {
@@ -188,6 +202,41 @@
         { nombre: "Cómputo paralelo" }
       ]
     };
+    const PRERREQUISITOS = {
+      "Inglés II": ["Inglés I"],
+      "Inglés III": ["Inglés II"],
+      "Inglés IV": ["Inglés III"],
+      "Inglés V": ["Inglés IV"],
+      "Inglés VI": ["Inglés V"],
+      "Cálculo integral para ciencias": ["Cálculo diferencial para ciencias"],
+      "Cálculo en varias variables": ["Cálculo integral para ciencias"],
+      "Ecuaciones diferenciales": ["Cálculo en varias variables"],
+      "Métodos numéricos": ["Ecuaciones diferenciales"],
+      "Modelos estadísticos": ["Modelos probabilísticos"],
+      "Modelos estadísticos avanzados": ["Modelos estadísticos"],
+      "Procesos estocásticos": ["Modelos estadísticos avanzados"],
+      "Fundamentos de programación": ["Matemáticas discretas"],
+      "Estructura de datos": ["Fundamentos de programación"],
+      "Programación avanzada": ["Estructura de datos"],
+      "Programación para ciencia de datos": ["Programación avanzada"],
+      "Programación para ciencia de datos avanzada": ["Programación para ciencia de datos"],
+      "Inteligencia artificial": ["Programación para ciencia de datos avanzada"],
+      "Aprendizaje automático": ["Inteligencia artificial"],
+      "Redes neuronales": ["Aprendizaje automático"],
+      "Aprendizaje profundo": ["Redes neuronales"],
+      "Modelos de bases de datos": ["Programación avanzada"],
+      "Gestión de bases de datos": ["Modelos de bases de datos"],
+      "Bases de datos no relacionales": ["Gestión de bases de datos"],
+      "Manejo de grandes volúmenes de datos": ["Bases de datos no relacionales"]
+    };
+    function getPrerequisitos(course){
+      return Array.isArray(course.prerrequisitos)
+        ? course.prerrequisitos
+        : (PRERREQUISITOS[course.nombre] || []);
+    }
+    function getMissingPrerequisitos(course){
+      return getPrerequisitos(course).filter(req => !isApproved(req));
+    }
 
     // === Persistencia local ===
     const KEY = "malla_unitec_progress_v1";
@@ -227,6 +276,11 @@
       return (v && typeof v === 'object') ? (v.grade ?? null) : null;
     }
     function setGradeAndStatus(name, gradeValue){
+      const course = { nombre: name, prerrequisitos: PRERREQUISITOS[name] || [] };
+      const missing = getMissingPrerequisitos(course);
+      if(missing.length){
+        return false;
+      }
       const prev = (saved[name] && typeof saved[name] === 'object') ? saved[name] : { inProgress: false };
       const raw = (gradeValue ?? '').toString().trim();
       const isEmpty = raw === '';
@@ -243,12 +297,18 @@
       }
       saved[name] = { ...prev, approved, grade };
       localStorage.setItem(KEY, JSON.stringify(saved));
+      return true;
     }
     function isInProgress(name){
       const v = saved[name];
       return (v && typeof v === 'object') ? Boolean(v.inProgress) : false;
     }
     function toggleInProgress(name){
+      const course = { nombre: name, prerrequisitos: PRERREQUISITOS[name] || [] };
+      const missing = getMissingPrerequisitos(course);
+      if(missing.length){
+        return false;
+      }
       const prev = (saved[name] && typeof saved[name] === 'object') ? saved[name] : { approved: false, grade: null, inProgress: false };
       const next = !prev.inProgress;
       saved[name] = { ...prev, inProgress: next };
@@ -288,13 +348,21 @@
 
     function courseCard(course){
       const div = document.createElement('div');
-      div.className = 'course' + (isApproved(course.nombre) ? ' approved' : '') + (isInProgress(course.nombre) ? ' in-progress' : '');
+      const missingPrereqs = getMissingPrerequisitos(course);
+      const isLocked = missingPrereqs.length > 0 && !isApproved(course.nombre);
+      div.className = 'course'
+        + (isApproved(course.nombre) ? ' approved' : '')
+        + (isInProgress(course.nombre) ? ' in-progress' : '')
+        + (isLocked ? ' locked' : '');
       div.tabIndex = 0;
       div.role = 'group';
-      div.title = 'Ingresa la nota para marcar como aprobada. Clic en la tarjeta para “en curso”.'
+      div.title = isLocked
+        ? `Materia seriada. Debes aprobar antes: ${missingPrereqs.join(', ')}.`
+        : 'Ingresa la nota para marcar como aprobada. Clic en la tarjeta para “en curso”.'
       ;
       div.addEventListener('click', (e) => {
         if(e.target && e.target.closest && e.target.closest('.grade-input')) return;
+        if(isLocked) return;
         const on = toggleInProgress(course.nombre);
         div.classList.toggle('in-progress', on);
         updateProgress();
@@ -307,7 +375,9 @@
       const meta = document.createElement('div');
       meta.className = 'meta';
       if(course.creditos) meta.innerHTML += `<span class="badge">${course.creditos} créditos</span>`;
-      if(course.prerrequisitos?.length) meta.innerHTML += `<span class="badge">Req: ${course.prerrequisitos.join(', ')}</span>`;
+      const prereqs = getPrerequisitos(course);
+      if(prereqs.length) meta.innerHTML += `<span class="badge">Req: ${prereqs.join(', ')}</span>`;
+      if(isLocked) meta.innerHTML += `<span class="badge">Bloqueada</span>`;
 
       // Campo de nota
       const gradeRow = document.createElement('div');
@@ -322,14 +392,17 @@
       input.className = 'grade-input';
       const currentGrade = getGrade(course.nombre);
       if(currentGrade !== null && currentGrade !== undefined){ input.value = String(currentGrade); }
+      input.disabled = isLocked;
 
       input.addEventListener('input', () => {
+        if(isLocked) return;
         const before = isApproved(course.nombre);
         const val = input.value.trim();
-        setGradeAndStatus(course.nombre, val);
+        const updated = setGradeAndStatus(course.nombre, val);
+        if(!updated) return;
         const now = isApproved(course.nombre);
         div.classList.toggle('approved', now);
-        if(filter.value !== 'all' && before !== now){
+        if(before !== now){
           render();
           return;
         }
