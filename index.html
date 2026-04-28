@@ -203,32 +203,49 @@
       ]
     };
     const PRERREQUISITOS = {
-      "Inglés II": ["Inglés I"],
-      "Inglés III": ["Inglés II"],
-      "Inglés IV": ["Inglés III"],
-      "Inglés V": ["Inglés IV"],
-      "Inglés VI": ["Inglés V"],
-      "Cálculo integral para ciencias": ["Cálculo diferencial para ciencias"],
-      "Cálculo en varias variables": ["Cálculo integral para ciencias"],
-      "Ecuaciones diferenciales": ["Cálculo en varias variables"],
-      "Métodos numéricos": ["Ecuaciones diferenciales"],
-      "Modelos estadísticos": ["Modelos probabilísticos"],
-      "Modelos estadísticos avanzados": ["Modelos estadísticos"],
-      "Procesos estocásticos": ["Modelos estadísticos avanzados"],
-      "Fundamentos de programación": ["Matemáticas discretas"],
-      "Estructura de datos": ["Fundamentos de programación"],
-      "Programación avanzada": ["Estructura de datos"],
-      "Programación para ciencia de datos": ["Programación avanzada"],
-      "Programación para ciencia de datos avanzada": ["Programación para ciencia de datos"],
-      "Inteligencia artificial": ["Programación para ciencia de datos avanzada"],
-      "Aprendizaje automático": ["Inteligencia artificial"],
-      "Redes neuronales": ["Aprendizaje automático"],
-      "Aprendizaje profundo": ["Redes neuronales"],
-      "Modelos de bases de datos": ["Programación avanzada"],
-      "Gestión de bases de datos": ["Modelos de bases de datos"],
-      "Bases de datos no relacionales": ["Gestión de bases de datos"],
-      "Manejo de grandes volúmenes de datos": ["Bases de datos no relacionales"]
-    };
+  // Inglés
+  "Inglés II": ["Inglés I"],
+  "Inglés III": ["Inglés II"],
+  "Inglés IV": ["Inglés III"],
+  "Inglés V": ["Inglés IV"],
+
+  // Matemáticas base
+  "Cálculo diferencial para ciencias": ["Álgebra para ciencias"],
+  "Cálculo integral para ciencias": ["Cálculo diferencial para ciencias"],
+  "Cálculo en varias variables": ["Cálculo integral para ciencias"],
+  "Ecuaciones diferenciales": ["Cálculo en varias variables"],
+
+  // Numérico / probabilístico
+  "Métodos numéricos": ["Ecuaciones diferenciales"],
+  "Modelos probabilísticos": ["Matemáticas discretas"],
+  "Modelos estadísticos": ["Modelos probabilísticos"],
+  "Modelos estadísticos avanzados": ["Modelos estadísticos"],
+  "Procesos estocásticos": ["Modelos estadísticos avanzados"],
+
+  // Programación
+  "Fundamentos de programación": ["Matemáticas discretas"],
+  "Estructura de datos": ["Fundamentos de programación"],
+  "Programación avanzada": ["Estructura de datos"],
+  "Programación para ciencias de datos": ["Estructura de datos"],
+  "Programación para ciencias de datos avanzada": ["Programación para ciencias de datos"],
+
+  // IA / Data
+  "Inteligencia artificial": ["Programación para ciencias de datos avanzada"],
+  "Aprendizaje automático": ["Inteligencia artificial"],
+  "Redes neuronales": ["Aprendizaje automático"],
+  "Aprendizaje profundo": ["Redes neuronales"],
+
+  // Bases de datos
+  "Modelos de bases de datos": ["Programación avanzada"],
+  "Gestión de bases de datos": ["Modelos de bases de datos"],
+  "Bases de datos no relacionales": ["Gestión de bases de datos"],
+  "Manejo de grandes volúmenes de datos": ["Bases de datos no relacionales"],
+
+  // Otros encadenamientos importantes
+  "Espacios y transformaciones lineales": ["Álgebra para ciencias"],
+  "Geometría analítica vectorial en 3D": ["Geometría analítica vectorial en 2D"],
+  "Sistemas complejos": ["Sistemas no lineales"]
+};
     function getPrerequisitos(course){
       return Array.isArray(course.prerrequisitos)
         ? course.prerrequisitos
